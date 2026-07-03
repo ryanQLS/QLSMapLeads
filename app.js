@@ -282,6 +282,9 @@ function savePinDetails() {
         notes,
       };
       markerData.visits.push(newVisit);
+      if (outcome === 'Appointment' && returnDate) {
+        queueGoogleCalendarEvent(newVisit, markerData);
+      }
     }
 
     if (markerData.leafletMarker) {
@@ -305,6 +308,9 @@ function savePinDetails() {
     };
 
     state.markers.push(markerData);
+    if (returnDate && outcome === 'Appointment') {
+      queueGoogleCalendarEvent(markerData.visits[0], markerData);
+    }
   }
 
   renderFilterOptions();
@@ -411,6 +417,7 @@ function createPopupContent(markerData) {
   const contactType = escapeHtml(markerData.contactType || '—');
   const outcome = escapeHtml(markerData.outcome || '—');
   const returnDate = escapeHtml(markerData.returnDate || '—');
+  const googleAction = markerData.outcome === 'Appointment' ? `<button data-action="google" data-id="${markerData.id}">Google</button>` : '';
   const visits = (markerData.visits || []).filter((visit) => visit.returnDate).sort((a, b) => a.returnDate.localeCompare(b.returnDate));
   const visitMarkup = visits.length
     ? visits.map((visit) => `
@@ -431,6 +438,7 @@ function createPopupContent(markerData) {
       ${markerData.returnDate ? `<div><strong>Return:</strong> ${returnDate}</div>` : ''}
       <div><strong>Notes:</strong> ${visitMarkup}</div>
       <div class="pin-popup__actions">
+        ${googleAction}
         <button data-action="edit" data-id="${markerData.id}">Edit</button>
         <button data-action="return" data-id="${markerData.id}">Return</button>
         <button data-action="delete" data-id="${markerData.id}">Delete</button>
@@ -510,6 +518,8 @@ function handleCalendarEntryClick(event) {
       openPinDetailsModal(markerData);
     } else if (action === 'delete') {
       removeMarker(markerData);
+    } else if (action === 'google') {
+      openGoogleCalendarForMarker(markerData);
     }
     return;
   }
@@ -554,6 +564,74 @@ function updateCalendarPanelState() {
   elems.calendarToggleButton.textContent = state.calendarCollapsed ? 'Open' : 'Hide';
 }
 
+function queueGoogleCalendarEvent(visit, markerData) {
+  if (!visit || !visit.returnDate || !markerData || markerData.outcome !== 'Appointment') return;
+  const url = createGoogleCalendarUrlForItem({
+    title: markerData.title || 'Appointment',
+    notes: visit.notes || '',
+    contact: markerData.contact || '',
+    outcome: markerData.outcome || '',
+    visits: [visit],
+  });
+  if (url) window.open(url, '_blank');
+}
+
+function openGoogleCalendarForMarker(markerData) {
+  if (!markerData || markerData.outcome !== 'Appointment') return;
+  const item = getCalendarEntries([markerData]).flatMap((entry) => entry.items)[0];
+  if (!item) return;
+  const url = createGoogleCalendarUrlForItem(item);
+  if (url) window.open(url, '_blank');
+}
+
+function createGoogleCalendarUrlForItem(item) {
+  const visit = (item.visits || [])[0];
+  if (!visit || !visit.returnDate) return '';
+
+  const title = item.title || 'Appointment';
+  const details = [item.notes || '', `Outcome: ${item.outcome || 'None'}`, `Contact: ${item.contact || 'Unknown'}`]
+    .filter(Boolean)
+    .join('\n');
+  const location = item.title || '';
+  const start = formatGoogleDateTime(item.visits[0].returnDate);
+  const end = formatGoogleDateTime(addMinutesToDate(item.visits[0].returnDate, 60));
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+  if (!start || !end) return '';
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${start}/${end}`,
+    details,
+    location,
+    ctz: timezone,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function formatGoogleDateTime(dateTime) {
+  const dt = new Date(dateTime);
+  if (Number.isNaN(dt.getTime())) return '';
+
+  const pad = (value) => String(value).padStart(2, '0');
+  const year = dt.getFullYear();
+  const month = pad(dt.getMonth() + 1);
+  const day = pad(dt.getDate());
+  const hour = pad(dt.getHours());
+  const minute = pad(dt.getMinutes());
+  const second = pad(dt.getSeconds());
+
+  return `${year}${month}${day}T${hour}${minute}${second}`;
+}
+
+function addMinutesToDate(dateTime, minutes) {
+  const dt = new Date(dateTime);
+  dt.setMinutes(dt.getMinutes() + minutes);
+  return dt.toISOString();
+}
+
 function renderCalendarPanel() {
   const entries = getCalendarEntries(getFilteredMarkers(state.markers, state.filters));
   const selectedDate = state.filters.returnDate;
@@ -583,6 +661,7 @@ function renderCalendarPanel() {
             <div class="calendar-item__time">${escapeHtml((item.visits || []).map((v) => formatTime(v.returnDate)).filter(Boolean).join(', '))}</div>
           </div>
           <div class="calendar-item__actions">
+            ${item.marker.outcome === 'Appointment' ? `<button type="button" class="calendar-item__action" data-action="google" data-marker-id="${item.marker.id}">Google</button>` : ''}
             <button type="button" class="calendar-item__action" data-action="return" data-marker-id="${item.marker.id}">Return</button>
             <button type="button" class="calendar-item__action" data-action="edit" data-marker-id="${item.marker.id}">Edit</button>
             <button type="button" class="calendar-item__action calendar-item__action--danger" data-action="delete" data-marker-id="${item.marker.id}">Delete</button>
