@@ -13,6 +13,7 @@ const state = {
     returnDate: 'all',
   },
   calendarCollapsed: true,
+  calendarTouchStartY: null,
   liveLocationActive: false,
   liveLocationWatchId: null,
   liveLocationMarker: null,
@@ -37,7 +38,7 @@ const elems = {
   returnDateFilter: qs('#returnDateFilter'),
   calendarPanel: qs('#calendarPanel'),
   calendarToggleButton: qs('#calendarToggleButton'),
-  exportAllToGoogleButton: qs('#exportAllToGoogleButton'),
+  calendarHandle: qs('#calendarHandle'),
   calendarDayFilters: qs('#calendarDayFilters'),
   calendarList: qs('#calendarList'),
   liveLocationButton: qs('#liveLocationButton'),
@@ -162,7 +163,10 @@ function setupEventListeners() {
   elems.outcomeFilter.addEventListener('change', handleFilterChange);
   elems.returnDateFilter.addEventListener('change', handleFilterChange);
   elems.calendarToggleButton.addEventListener('click', toggleCalendarPanel);
-  elems.exportAllToGoogleButton.addEventListener('click', addAllVisibleToGoogleCalendar);
+  elems.calendarHandle.addEventListener('touchstart', handleCalendarTouchStart, { passive: true });
+  elems.calendarHandle.addEventListener('touchend', handleCalendarTouchEnd, { passive: true });
+  elems.calendarPanel.addEventListener('touchstart', handleCalendarTouchStart, { passive: true });
+  elems.calendarPanel.addEventListener('touchend', handleCalendarTouchEnd, { passive: true });
   elems.calendarDayFilters.addEventListener('click', handleCalendarChipClick);
   elems.calendarList.addEventListener('click', handleCalendarEntryClick);
   elems.detailModal.addEventListener('click', (event) => {
@@ -300,6 +304,9 @@ function savePinDetails() {
     };
 
     state.markers.push(markerData);
+    if (returnDate) {
+      queueGoogleCalendarEvent(markerData.visits[0], markerData);
+    }
   }
 
   renderFilterOptions();
@@ -386,6 +393,7 @@ function createPinIcon(outcome) {
     'Closed Deal': 'closed-deal',
     'Door Locked': 'door-locked',
     'Follow Up': 'follow-up',
+    'Appointment': 'appointment',
     'Not Interested': 'not-interested',
     'Other': 'other',
   };
@@ -537,6 +545,18 @@ function addAllVisibleToGoogleCalendar() {
   });
 }
 
+function queueGoogleCalendarEvent(visit, markerData) {
+  if (!visit || !visit.returnDate) return;
+  const url = createGoogleCalendarUrlForItem({
+    title: markerData.title || 'Return visit',
+    notes: visit.notes || '',
+    contact: markerData.contact || '',
+    outcome: markerData.outcome || '',
+    visits: [visit],
+  });
+  if (url) window.open(url, '_blank');
+}
+
 function openGoogleCalendarForMarker(markerData) {
   const item = getCalendarEntries([markerData]).flatMap((entry) => entry.items)[0];
   if (!item) return;
@@ -590,6 +610,26 @@ function addMinutesToDate(dateTime, minutes) {
   const dt = new Date(dateTime);
   dt.setMinutes(dt.getMinutes() + minutes);
   return dt.toISOString();
+}
+
+function handleCalendarTouchStart(event) {
+  state.calendarTouchStartY = event.touches?.[0]?.clientY ?? null;
+}
+
+function handleCalendarTouchEnd(event) {
+  if (state.calendarTouchStartY === null) return;
+  const endY = event.changedTouches?.[0]?.clientY ?? null;
+  if (endY === null) return;
+
+  const deltaY = state.calendarTouchStartY - endY;
+  if (deltaY < -50) {
+    state.calendarCollapsed = true;
+  } else if (deltaY > 50) {
+    state.calendarCollapsed = false;
+  }
+
+  state.calendarTouchStartY = null;
+  updateCalendarPanelState();
 }
 
 function toggleCalendarPanel() {

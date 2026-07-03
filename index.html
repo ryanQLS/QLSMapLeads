@@ -22,6 +22,7 @@
         <option value="Closed Deal">Closed Deal</option>
         <option value="Door Locked">Door Locked</option>
         <option value="Follow Up">Follow Up</option>
+        <option value="Appointment">Appointment</option>
         <option value="Not Interested">Not Interested</option>
         <option value="Other">Other</option>
       </select>
@@ -39,14 +40,13 @@
   <button id="liveLocationButton" class="mini-fab" type="button" aria-label="Toggle live location">📍</button>
 
   <div id="calendarPanel" class="calendar-panel collapsed">
-    <div class="calendar-panel__handle"></div>
+    <div id="calendarHandle" class="calendar-panel__handle"></div>
     <div class="calendar-panel__header">
       <div>
         <h4>Return calendar</h4>
         <p>See which businesses need a revisit and on which day.</p>
       </div>
       <div class="calendar-panel__header-actions">
-        <button id="exportAllToGoogleButton" class="calendar-export" type="button">Add all to Google</button>
         <button id="calendarToggleButton" class="calendar-toggle" type="button">Open</button>
       </div>
     </div>
@@ -68,6 +68,7 @@
           <option value="Closed Deal">Closed Deal</option>
           <option value="Door Locked">Door Locked</option>
           <option value="Follow Up">Follow Up</option>
+          <option value="Appointment">Appointment</option>
           <option value="Not Interested">Not Interested</option>
           <option value="Other">Other</option>
         </select>
