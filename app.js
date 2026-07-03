@@ -550,7 +550,7 @@ function addAllVisibleToGoogleCalendar() {
 }
 
 function queueGoogleCalendarEvent(visit, markerData) {
-  if (!visit || !visit.returnDate) return;
+  if (!visit || !visit.returnDate || !markerData || markerData.outcome !== 'Appointment') return;
   const url = createGoogleCalendarUrlForItem({
     title: markerData.title || 'Return visit',
     notes: visit.notes || '',
