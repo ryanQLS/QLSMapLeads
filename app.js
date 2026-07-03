@@ -282,9 +282,6 @@ function savePinDetails() {
         notes,
       };
       markerData.visits.push(newVisit);
-      if (outcome === 'Appointment') {
-        queueGoogleCalendarEvent(newVisit, markerData);
-      }
     }
 
     if (markerData.leafletMarker) {
@@ -308,9 +305,6 @@ function savePinDetails() {
     };
 
     state.markers.push(markerData);
-    if (returnDate && outcome === 'Appointment') {
-      queueGoogleCalendarEvent(markerData.visits[0], markerData);
-    }
   }
 
   renderFilterOptions();
@@ -516,8 +510,6 @@ function handleCalendarEntryClick(event) {
       openPinDetailsModal(markerData);
     } else if (action === 'delete') {
       removeMarker(markerData);
-    } else if (action === 'google') {
-      openGoogleCalendarForMarker(markerData);
     }
     return;
   }
@@ -530,90 +522,6 @@ function handleCalendarEntryClick(event) {
 
   markerData.leafletMarker?.closePopup();
   openPinDetailsModal(markerData);
-}
-
-function addAllVisibleToGoogleCalendar() {
-  const entries = getCalendarEntries(getFilteredMarkers(state.markers, state.filters));
-  const items = entries.flatMap((entry) => entry.items);
-
-  if (!items.length) {
-    alert('No return visits are available to add to Google Calendar.');
-    return;
-  }
-
-  items.forEach((item) => {
-    const url = createGoogleCalendarUrlForItem(item);
-    if (url) {
-      window.open(url, '_blank');
-    }
-  });
-}
-
-function queueGoogleCalendarEvent(visit, markerData) {
-  if (!visit || !visit.returnDate || !markerData || markerData.outcome !== 'Appointment') return;
-  const url = createGoogleCalendarUrlForItem({
-    title: markerData.title || 'Return visit',
-    notes: visit.notes || '',
-    contact: markerData.contact || '',
-    outcome: markerData.outcome || '',
-    visits: [visit],
-  });
-  if (url) window.open(url, '_blank');
-}
-
-function openGoogleCalendarForMarker(markerData) {
-  const item = getCalendarEntries([markerData]).flatMap((entry) => entry.items)[0];
-  if (!item) return;
-  const url = createGoogleCalendarUrlForItem(item);
-  if (url) window.open(url, '_blank');
-}
-
-function createGoogleCalendarUrlForItem(item) {
-  const visit = (item.visits || [])[0];
-  if (!visit || !visit.returnDate) return '';
-
-  const title = item.title || 'Return visit';
-  const details = [item.notes || '', `Outcome: ${item.outcome || 'None'}`, `Contact: ${item.contact || 'Unknown'}`]
-    .filter(Boolean)
-    .join('\n');
-  const location = item.title || '';
-  const start = formatGoogleDateTime(item.visits[0].returnDate);
-  const end = formatGoogleDateTime(addMinutesToDate(item.visits[0].returnDate, 60));
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-
-  if (!start || !end) return '';
-
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: title,
-    dates: `${start}/${end}`,
-    details,
-    location,
-    ctz: timezone,
-  });
-
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
-}
-
-function formatGoogleDateTime(dateTime) {
-  const dt = new Date(dateTime);
-  if (Number.isNaN(dt.getTime())) return '';
-
-  const pad = (value) => String(value).padStart(2, '0');
-  const year = dt.getFullYear();
-  const month = pad(dt.getMonth() + 1);
-  const day = pad(dt.getDate());
-  const hour = pad(dt.getHours());
-  const minute = pad(dt.getMinutes());
-  const second = pad(dt.getSeconds());
-
-  return `${year}${month}${day}T${hour}${minute}${second}`;
-}
-
-function addMinutesToDate(dateTime, minutes) {
-  const dt = new Date(dateTime);
-  dt.setMinutes(dt.getMinutes() + minutes);
-  return dt.toISOString();
 }
 
 function handleCalendarTouchStart(event) {
@@ -676,7 +584,6 @@ function renderCalendarPanel() {
           </div>
           <div class="calendar-item__actions">
             <button type="button" class="calendar-item__action" data-action="return" data-marker-id="${item.marker.id}">Return</button>
-            <button type="button" class="calendar-item__action" data-action="google" data-marker-id="${item.marker.id}">Google</button>
             <button type="button" class="calendar-item__action" data-action="edit" data-marker-id="${item.marker.id}">Edit</button>
             <button type="button" class="calendar-item__action calendar-item__action--danger" data-action="delete" data-marker-id="${item.marker.id}">Delete</button>
           </div>
