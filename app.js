@@ -272,15 +272,19 @@ function savePinDetails() {
       if (!Array.isArray(markerData.visits)) {
         markerData.visits = [];
       }
-        // Remove any existing return-dated visits so only the new one remains
-        markerData.visits = markerData.visits.filter((v) => !v.returnDate);
-        const createdAt = new Date().toISOString().slice(0, 10);
-        markerData.visits.push({
-          id: crypto.randomUUID(),
-          returnDate,
-          createdAt,
-          notes,
-        });
+      // Remove any existing return-dated visits so only the new one remains
+      markerData.visits = markerData.visits.filter((v) => !v.returnDate);
+      const createdAt = new Date().toISOString().slice(0, 10);
+      const newVisit = {
+        id: crypto.randomUUID(),
+        returnDate,
+        createdAt,
+        notes,
+      };
+      markerData.visits.push(newVisit);
+      if (outcome === 'Appointment') {
+        queueGoogleCalendarEvent(newVisit, markerData);
+      }
     }
 
     if (markerData.leafletMarker) {
@@ -304,7 +308,7 @@ function savePinDetails() {
     };
 
     state.markers.push(markerData);
-    if (returnDate) {
+    if (returnDate && outcome === 'Appointment') {
       queueGoogleCalendarEvent(markerData.visits[0], markerData);
     }
   }
