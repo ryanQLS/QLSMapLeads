@@ -1,0 +1,10 @@
+{
+  "name": "QLS Map Leads",
+  "short_name": "QLS Leads",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#eef2ff",
+  "theme_color": "#0f172a",
+  "description": "Track door-to-door sales visits with map markers, follow-ups, and re-loop management.",
+  "icons": []
+}

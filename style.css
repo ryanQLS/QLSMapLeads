@@ -1,0 +1,535 @@
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bg: #f7f1e8;
+  --accent: #d97706;
+  --accent-2: #f59e0b;
+  --ink: #2f2418;
+  --shadow: 0 10px 26px rgba(47, 36, 24, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  position: relative;
+}
+
+.map {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #fff9ef 0%, #fde7c7 100%);
+}
+
+.filter-toolbar {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 1001;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border-radius: 18px;
+  background: rgba(255, 253, 248, 0.94);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.filter-control {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.83rem;
+  color: #635648;
+}
+
+.filter-control select {
+  border: 1px solid rgba(47, 36, 24, 0.14);
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+}
+
+.fab {
+  position: fixed;
+  right: 1rem;
+  bottom: 5.5rem;
+  width: 64px;
+  height: 64px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 2rem;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.mini-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: 12rem;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1.4rem;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease, background 0.2s ease;
+}
+
+.mini-fab:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+.mini-fab.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+
+.fab:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+.fab.active {
+  background: linear-gradient(135deg, #b45309, #92400e);
+  transform: scale(1.04);
+}
+
+.calendar-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1002;
+  background: rgba(255, 253, 248, 0.97);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 30px rgba(47, 36, 24, 0.16);
+  padding: 0.75rem 1rem 1rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  transition: transform 0.2s ease;
+}
+
+.calendar-panel.collapsed {
+  transform: translateY(calc(100% - 82px));
+}
+
+.calendar-panel__handle {
+  width: 46px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(47, 36, 24, 0.2);
+  margin: 0 auto 0.65rem;
+}
+
+.calendar-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.calendar-panel__header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.calendar-export {
+  border: none;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.calendar-export:hover {
+  background: #1d4ed8;
+}
+
+.calendar-panel__header h4 {
+  margin: 0 0 0.15rem;
+  font-size: 1rem;
+}
+
+.calendar-panel__header p {
+  margin: 0;
+  color: #6f6154;
+  font-size: 0.84rem;
+}
+
+.calendar-toggle {
+  border: none;
+  border-radius: 999px;
+  background: #f3e7d6;
+  color: var(--ink);
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+}
+
+.calendar-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.calendar-chip {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(47, 36, 24, 0.1);
+}
+
+.calendar-chip.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.calendar-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.calendar-item {
+  border-radius: 16px;
+  padding: 0.7rem;
+  background: #fff9ef;
+  box-shadow: inset 0 0 0 1px rgba(47, 36, 24, 0.08);
+}
+
+.calendar-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  color: #735b3b;
+}
+
+.calendar-item__entry {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px dashed rgba(47, 36, 24, 0.14);
+  width: 100%;
+  text-align: left;
+  background: transparent;
+}
+
+.calendar-item__entry:first-of-type {
+  border-top: 0;
+}
+
+.calendar-item__summary {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.calendar-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-start;
+}
+
+.calendar-item__action {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(47, 36, 24, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.calendar-item__action:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(47, 36, 24, 0.18);
+}
+
+.calendar-item__action--danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.calendar-item__entry:hover {
+  background: rgba(247, 240, 226, 0.8);
+}
+
+.calendar-item__entry strong {
+  display: block;
+  margin-bottom: 0.18rem;
+}
+
+.calendar-item__entry > span {
+  color: #8e6a35;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.calendar-item__notes {
+  margin-top: 0.2rem;
+  color: #7d6d58;
+  font-size: 0.86rem;
+}
+
+.calendar-empty {
+  padding: 0.9rem;
+  text-align: center;
+  color: #7d6d58;
+  background: #fff9ef;
+  border-radius: 16px;
+}
+
+.detail-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(47, 36, 24, 0.28);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 2000;
+}
+
+.detail-modal.hidden {
+  display: none;
+}
+
+.detail-card {
+  width: min(360px, 100%);
+  background: #fffdf8;
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.detail-card h3 {
+  margin: 0 0 0.8rem;
+  font-size: 1.1rem;
+}
+
+.detail-card label {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.detail-card .field-disabled {
+  opacity: 0.6;
+}
+
+.detail-card input,
+.detail-card textarea,
+.detail-card select {
+  width: 100%;
+  border: 1px solid rgba(47, 36, 24, 0.16);
+  border-radius: 12px;
+  padding: 0.75rem 0.8rem;
+  font: inherit;
+  background: #fff;
+}
+
+.detail-card textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+
+.primary-btn,
+.secondary-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 0.95rem;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: var(--accent);
+  color: white;
+}
+
+.secondary-btn {
+  background: #f3e7d6;
+  color: var(--ink);
+}
+
+.pin-icon-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.pin-marker {
+  width: 22px;
+  height: 28px;
+  background: linear-gradient(135deg, #d97706, #b45309);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  position: relative;
+  box-shadow: 0 6px 16px rgba(47, 36, 24, 0.2);
+}
+
+.pin-marker--closed-deal {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.pin-marker--door-locked {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
+.pin-marker--follow-up {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.pin-marker--not-interested {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+}
+
+.pin-marker--other {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.pin-marker--default {
+  background: linear-gradient(135deg, #d97706, #b45309);
+}
+
+.pin-marker::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: #fff7ed;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 16px;
+}
+
+.pin-popup {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 180px;
+}
+
+.pin-popup strong {
+  font-size: 1rem;
+}
+
+.pin-popup__visit {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.35rem 0;
+  border-top: 1px dashed rgba(47, 36, 24, 0.16);
+}
+
+.pin-popup__visit:first-of-type {
+  border-top: 0;
+}
+
+.pin-popup__visit--empty {
+  color: #8f7861;
+}
+
+.pin-popup__actions {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.pin-popup button {
+  border: none;
+  padding: 0.55rem 0.7rem;
+  border-radius: 999px;
+  background: #f3e7d6;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.leaflet-container {
+  background: #fde7c7;
+}
+
+.leaflet-control-zoom a {
+  border: none;
+  color: var(--ink);
+  box-shadow: 0 6px 16px rgba(47, 42, 36, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.leaflet-control-zoom a:hover {
+  background: #f6efe6;
+}
+
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.7);
+  color: #6b6258;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 520px) {
+  .fab {
+    width: 56px;
+    height: 56px;
+    right: 0.75rem;
+    bottom: 5.2rem;
+  }
+
+  .filter-toolbar {
+    left: 0.75rem;
+    right: 0.75rem;
+    top: 0.75rem;
+  }
+
+  .calendar-panel {
+    padding: 0.75rem 0.8rem 1rem;
+  }
+}

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#f3f6fb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Map Pins</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="map" class="map" aria-label="Map"></div>
+
+  <div id="mapFilters" class="filter-toolbar" aria-label="Map filters">
+    <label class="filter-control">
+      <span>Outcome</span>
+      <select id="outcomeFilter">
+        <option value="all">All outcomes</option>
+        <option value="Closed Deal">Closed Deal</option>
+        <option value="Door Locked">Door Locked</option>
+        <option value="Follow Up">Follow Up</option>
+        <option value="Not Interested">Not Interested</option>
+        <option value="Other">Other</option>
+      </select>
+    </label>
+    <label class="filter-control">
+      <span>Return date</span>
+      <select id="returnDateFilter">
+        <option value="all">All dates</option>
+        <option value="has-return-date">With return date</option>
+      </select>
+    </label>
+  </div>
+
+  <button id="addPointButton" class="fab" aria-label="Add marker">+</button>
+  <button id="liveLocationButton" class="mini-fab" type="button" aria-label="Toggle live location">📍</button>
+
+  <div id="calendarPanel" class="calendar-panel collapsed">
+    <div class="calendar-panel__handle"></div>
+    <div class="calendar-panel__header">
+      <div>
+        <h4>Return calendar</h4>
+        <p>See which businesses need a revisit and on which day.</p>
+      </div>
+      <div class="calendar-panel__header-actions">
+        <button id="exportAllToGoogleButton" class="calendar-export" type="button">Add all to Google</button>
+        <button id="calendarToggleButton" class="calendar-toggle" type="button">Open</button>
+      </div>
+    </div>
+    <div id="calendarDayFilters" class="calendar-chip-row"></div>
+    <div id="calendarList" class="calendar-list"></div>
+  </div>
+
+  <div id="detailModal" class="detail-modal hidden" role="dialog" aria-modal="true">
+    <div class="detail-card">
+      <h3>Pin details</h3>
+      <label>
+        Business / Place
+        <input id="pinTitleInput" type="text" placeholder="Enter a name" />
+      </label>
+      <label>
+        Outcome
+        <select id="pinOutcomeSelect">
+          <option value="">Select outcome</option>
+          <option value="Closed Deal">Closed Deal</option>
+          <option value="Door Locked">Door Locked</option>
+          <option value="Follow Up">Follow Up</option>
+          <option value="Not Interested">Not Interested</option>
+          <option value="Other">Other</option>
+        </select>
+      </label>
+      <label>
+        Who I Met
+        <input id="pinContactInput" type="text" placeholder="Person met" />
+      </label>
+      <label>
+        Contact Type
+        <select id="pinContactTypeSelect">
+          <option value="">Select type</option>
+          <option value="Decision Maker">Decision Maker</option>
+          <option value="Regular Contact">Regular Contact</option>
+        </select>
+      </label>
+      <label id="pinReturnDateField" class="hidden">
+        Return Date & time
+        <input id="pinReturnDateInput" type="datetime-local" />
+      </label>
+      <label>
+        Notes
+        <textarea id="pinNotesInput" rows="4" placeholder="Add details"></textarea>
+      </label>
+      <div class="detail-actions">
+        <button id="cancelPinButton" type="button" class="secondary-btn">Cancel</button>
+        <button id="savePinButton" type="button" class="primary-btn">Save Pin</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="calendar-utils.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
