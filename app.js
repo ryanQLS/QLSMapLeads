@@ -438,7 +438,8 @@ function openMarkerInMaps(markerData) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
   const query = encodeURIComponent(`${lat},${lng}`);
-  const url = /iPhone|iPad|Mac/i.test(navigator.userAgent) ? `https://maps.apple.com/?ll=${query}` : `https://www.google.com/maps/search/?api=1&query=${query}`;  window.open(url, '_blank', 'noopener,noreferrer');
+  const url = `https://maps.apple.com/?q=${query}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function escapeHtml(text) {
