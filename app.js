@@ -438,8 +438,7 @@ function openMarkerInMaps(markerData) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
   const query = encodeURIComponent(`${lat},${lng}`);
-  const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
+  const url = /iPhone|iPad|Mac/i.test(navigator.userAgent) ? `https://maps.apple.com/?ll=${query}` : `https://www.google.com/maps/search/?api=1&query=${query}`;  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function escapeHtml(text) {
@@ -678,6 +677,8 @@ function renderCalendarPanel() {
                 <button type="button" class="calendar-item__action" data-action="return" data-marker-id="${item.marker.id}">Return</button>
                 <button type="button" class="calendar-item__action" data-action="edit" data-marker-id="${item.marker.id}">Edit</button>
                 <button type="button" class="calendar-item__action calendar-item__action--danger" data-action="delete" data-marker-id="${item.marker.id}">Delete</button>
+                <button type="button" class="calendar-item__action" data-action="maps" data-id="${item.marker.id}">Open on Maps</button>
+
               </div>
             </div>
           `).join('')}
