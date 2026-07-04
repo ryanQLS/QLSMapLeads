@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { canHaveReturnDate, getFilteredMarkers, getReturnDateOptions, getCalendarEntries } = require('./calendar-utils');
+const { canHaveReturnDate, getFilteredMarkers, getReturnDateOptions, getCalendarEntries, syncMarkerReturnDate } = require('./calendar-utils');
 
 test('filters markers by outcome and return date', () => {
   const markers = [
@@ -49,4 +49,35 @@ test('uses visit records when grouping calendar entries', () => {
   const entries = getCalendarEntries(markers);
   assert.equal(entries.length, 1);
   assert.equal(entries[0].items[0].notes, 'First visit');
+});
+
+test('removes a cleared return date from the marker and its visit record', () => {
+  const marker = {
+    id: '1',
+    title: 'Alpha',
+    outcome: 'Follow Up',
+    returnDate: '2026-07-10',
+    visits: [{ id: 'v1', returnDate: '2026-07-10', notes: 'First visit' }],
+  };
+
+  syncMarkerReturnDate(marker, { returnDate: '', notes: '', visitId: 'v1' });
+
+  assert.equal(marker.returnDate, '');
+  assert.deepEqual(marker.visits, []);
+});
+
+test('creates a visit record when an existing marker gains a return date', () => {
+  const marker = {
+    id: '1',
+    title: 'Alpha',
+    outcome: 'Follow Up',
+    returnDate: '',
+    visits: [],
+  };
+
+  syncMarkerReturnDate(marker, { returnDate: '2026-07-10', notes: 'Follow up', visitId: null, isReturnMode: false });
+
+  assert.equal(marker.returnDate, '2026-07-10');
+  assert.equal(marker.visits.length, 1);
+  assert.equal(marker.visits[0].returnDate, '2026-07-10');
 });

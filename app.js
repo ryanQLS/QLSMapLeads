@@ -256,33 +256,17 @@ function savePinDetails() {
     markerData.contactType = elems.pinContactTypeSelect.value;
     markerData.outcome = outcome;
     markerData.notes = notes;
-    markerData.returnDate = returnDate;
 
-    if (state.activeVisitId) {
-      const visitData = (markerData.visits || []).find((visit) => visit.id === state.activeVisitId);
-      if (visitData) {
-          visitData.returnDate = returnDate; // keep original createdAt, allow editing scheduled returnDate and notes
-        visitData.notes = notes;
-      }
-      // Ensure only one visit with a returnDate exists: remove other return-dated visits
-      if (Array.isArray(markerData.visits)) {
-        markerData.visits = markerData.visits.filter((v) => !v.returnDate || v.id === state.activeVisitId);
-      }
-    } else if (state.isReturnMode && returnDate) {
-      if (!Array.isArray(markerData.visits)) {
-        markerData.visits = [];
-      }
-      // Remove any existing return-dated visits so only the new one remains
-      markerData.visits = markerData.visits.filter((v) => !v.returnDate);
-      const createdAt = new Date().toISOString().slice(0, 10);
-      const newVisit = {
-        id: crypto.randomUUID(),
-        returnDate,
-        createdAt,
-        notes,
-      };
-      markerData.visits.push(newVisit);
-      if (outcome === 'Appointment' && returnDate) {
+    syncMarkerReturnDate(markerData, {
+      returnDate,
+      notes,
+      visitId: state.activeVisitId,
+      isReturnMode: state.isReturnMode,
+    });
+
+    if (state.isReturnMode && returnDate) {
+      const newVisit = (markerData.visits || []).find((visit) => visit.returnDate === returnDate && visit.notes === notes);
+      if (newVisit && outcome === 'Appointment') {
         queueGoogleCalendarEvent(newVisit, markerData);
       }
     }
@@ -358,6 +342,15 @@ function renderMarkers() {
             return;
           }
 
+          const mapsButton = event.target.closest('[data-action="maps"]');
+          if (mapsButton) {
+            event.preventDefault();
+            event.stopPropagation();
+            markerData.leafletMarker.closePopup();
+            openMarkerInMaps(markerData);
+            return;
+          }
+
           const deleteButton = event.target.closest('[data-action="delete"]');
           if (!deleteButton) return;
 
@@ -370,7 +363,7 @@ function renderMarkers() {
     }
 
     markerData.leafletMarker?.setPopupContent(createPopupContent(markerData));
-    markerData.leafletMarker?.setIcon && markerData.leafletMarker.setIcon(createPinIcon(markerData.outcome));
+    markerData.leafletMarker?.setIcon && markerData.leafletMarker.setIcon(createPinIcon(markerData.outcome, markerData.title));
 
     if (visibleIds.has(markerData.id)) {
       if (!state.map.hasLayer(markerData.leafletMarker)) {
@@ -382,17 +375,7 @@ function renderMarkers() {
   });
 }
 
-function createPinIcon() {
-  return L.divIcon({
-    html: '<div class="pin-marker"></div>',
-    className: 'pin-icon-wrapper',
-    iconSize: [22, 28],
-    iconAnchor: [11, 28],
-    popupAnchor: [0, -24],
-  });
-}
-
-function createPinIcon(outcome) {
+function createPinIcon(outcome, title = '') {
   const map = {
     'Closed Deal': 'closed-deal',
     'Door Locked': 'door-locked',
@@ -402,11 +385,12 @@ function createPinIcon(outcome) {
     'Other': 'other',
   };
   const cls = map[outcome] || 'default';
+  const label = title ? `<div class="pin-label">${escapeHtml(title)}</div>` : '';
   return L.divIcon({
-    html: `<div class="pin-marker pin-marker--${cls}"></div>`,
+    html: `<div class="pin-marker-wrap"><div class="pin-marker pin-marker--${cls}"></div>${label}</div>`,
     className: 'pin-icon-wrapper',
-    iconSize: [22, 28],
-    iconAnchor: [11, 28],
+    iconSize: [120, 48],
+    iconAnchor: [60, 44],
     popupAnchor: [0, -24],
   });
 }
@@ -439,12 +423,23 @@ function createPopupContent(markerData) {
       <div><strong>Notes:</strong> ${visitMarkup}</div>
       <div class="pin-popup__actions">
         ${googleAction}
+        <button data-action="maps" data-id="${markerData.id}">Open on Maps</button>
         <button data-action="edit" data-id="${markerData.id}">Edit</button>
         <button data-action="return" data-id="${markerData.id}">Return</button>
         <button data-action="delete" data-id="${markerData.id}">Delete</button>
       </div>
     </div>
   `;
+}
+
+function openMarkerInMaps(markerData) {
+  const lat = Number(markerData.lat);
+  const lng = Number(markerData.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+  const query = encodeURIComponent(markerData.title ? `${markerData.title} ${lat},${lng}` : `${lat},${lng}`);
+  const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function escapeHtml(text) {
@@ -524,7 +519,7 @@ function handleCalendarEntryClick(event) {
     return;
   }
 
-  const calendarEntry = event.target.closest('.calendar-item__entry');
+  const calendarEntry = event.target.closest('.calendar-entry-card');
   if (!calendarEntry) return;
 
   const markerData = state.markers.find((item) => item.id === calendarEntry.dataset.markerId);
@@ -635,6 +630,7 @@ function addMinutesToDate(dateTime, minutes) {
 function renderCalendarPanel() {
   const entries = getCalendarEntries(getFilteredMarkers(state.markers, state.filters));
   const selectedDate = state.filters.returnDate;
+  const today = new Date().toISOString().slice(0, 10);
 
   elems.calendarDayFilters.innerHTML = [
     `<button type="button" class="calendar-chip${selectedDate === 'all' ? ' active' : ''}" data-calendar-date="all">All days</button>`,
@@ -642,34 +638,53 @@ function renderCalendarPanel() {
   ].join('');
 
   if (!entries.length) {
-    elems.calendarList.innerHTML = '<div class="calendar-empty">No return visits match this filter yet.</div>';
+    elems.calendarList.innerHTML = `
+      <div class="calendar-empty">
+        <div class="calendar-empty__title">No return visits yet</div>
+        <div class="calendar-empty__body">Try a different filter or add a return date from a pin to keep your follow-ups organized.</div>
+      </div>
+    `;
     return;
   }
 
-  elems.calendarList.innerHTML = entries.map((entry) => `
-    <div class="calendar-item">
-      <div class="calendar-item__header">
-        <strong>${escapeHtml(formatCalendarDate(entry.date))}</strong>
-        <span>${entry.items.length} place${entry.items.length === 1 ? '' : 's'}</span>
-      </div>
-      ${entry.items.map((item) => `
-        <div class="calendar-item__entry" data-marker-id="${item.marker.id}">
-          <div class="calendar-item__summary">
-            <strong>${escapeHtml(item.title || 'Pin')}</strong>
-            <div>${escapeHtml(item.contact || 'No contact noted')}</div>
-            <div class="calendar-item__notes">${escapeHtml(item.notes || 'No notes')}</div>
-            <div class="calendar-item__time">${escapeHtml((item.visits || []).map((v) => formatTime(v.returnDate)).filter(Boolean).join(', '))}</div>
+  elems.calendarList.innerHTML = entries.map((entry) => {
+    const statusLabel = entry.date === today ? 'Today' : entry.date > today ? 'Upcoming' : 'Scheduled';
+
+    return `
+      <div class="calendar-item">
+        <div class="calendar-item__header">
+          <div class="calendar-item__date-group">
+            <span class="calendar-item__date-badge">${escapeHtml(formatCalendarDate(entry.date))}</span>
+            <span class="calendar-item__meta">${entry.items.length} place${entry.items.length === 1 ? '' : 's'}</span>
           </div>
-          <div class="calendar-item__actions">
-            ${item.marker.outcome === 'Appointment' ? `<button type="button" class="calendar-item__action" data-action="google" data-marker-id="${item.marker.id}">Google</button>` : ''}
-            <button type="button" class="calendar-item__action" data-action="return" data-marker-id="${item.marker.id}">Return</button>
-            <button type="button" class="calendar-item__action" data-action="edit" data-marker-id="${item.marker.id}">Edit</button>
-            <button type="button" class="calendar-item__action calendar-item__action--danger" data-action="delete" data-marker-id="${item.marker.id}">Delete</button>
-          </div>
+          <span class="calendar-item__status">${escapeHtml(statusLabel)}</span>
         </div>
-      `).join('')}
-    </div>
-  `).join('');
+        <div class="calendar-item__list">
+          ${entry.items.map((item) => `
+            <div class="calendar-entry-card" data-marker-id="${item.marker.id}">
+              <div class="calendar-entry-card__main">
+                <div class="calendar-entry-card__title-row">
+                  <strong>${escapeHtml(item.title || 'Pin')}</strong>
+                  <span class="calendar-entry-card__outcome">${escapeHtml(item.marker.outcome || 'Other')}</span>
+                </div>
+                <div class="calendar-entry-card__meta">
+                  <span>${escapeHtml(item.contact || 'No contact noted')}</span>
+                  <span>${escapeHtml((item.visits || []).map((v) => formatTime(v.returnDate)).filter(Boolean).join(' • ') || 'Time pending')}</span>
+                </div>
+                <div class="calendar-entry-card__notes">${escapeHtml(item.notes || 'No notes')}</div>
+              </div>
+              <div class="calendar-entry-card__actions">
+                ${item.marker.outcome === 'Appointment' ? `<button type="button" class="calendar-item__action" data-action="google" data-marker-id="${item.marker.id}">Google</button>` : ''}
+                <button type="button" class="calendar-item__action" data-action="return" data-marker-id="${item.marker.id}">Return</button>
+                <button type="button" class="calendar-item__action" data-action="edit" data-marker-id="${item.marker.id}">Edit</button>
+                <button type="button" class="calendar-item__action calendar-item__action--danger" data-action="delete" data-marker-id="${item.marker.id}">Delete</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function formatTime(dateTime) {

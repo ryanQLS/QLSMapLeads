@@ -67,11 +67,71 @@ function getCalendarEntries(markers) {
   return entries.sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function syncMarkerReturnDate(markerData, options = {}) {
+  const returnDate = String(options.returnDate || '').trim();
+  const notes = options.notes || '';
+  const visitId = options.visitId || null;
+  const isReturnMode = Boolean(options.isReturnMode);
+
+  markerData.returnDate = returnDate;
+
+  if (!Array.isArray(markerData.visits)) {
+    markerData.visits = [];
+  }
+
+  if (!returnDate) {
+    if (visitId) {
+      markerData.visits = markerData.visits.filter((visit) => visit.id !== visitId);
+    } else {
+      markerData.visits = markerData.visits.filter((visit) => !visit.returnDate);
+    }
+    return markerData;
+  }
+
+  if (visitId) {
+    const visitData = markerData.visits.find((visit) => visit.id === visitId);
+    if (visitData) {
+      visitData.returnDate = returnDate;
+      visitData.notes = notes;
+    } else {
+      markerData.visits.push({
+        id: visitId,
+        returnDate,
+        createdAt: new Date().toISOString().slice(0, 10),
+        notes,
+      });
+    }
+    return markerData;
+  }
+
+  const existingVisit = markerData.visits.find((visit) => visit.returnDate);
+  if (existingVisit) {
+    existingVisit.returnDate = returnDate;
+    existingVisit.notes = notes;
+    existingVisit.createdAt = existingVisit.createdAt || new Date().toISOString().slice(0, 10);
+    return markerData;
+  }
+
+  if (isReturnMode) {
+    markerData.visits = markerData.visits.filter((visit) => !visit.returnDate);
+  }
+
+  markerData.visits.push({
+    id: crypto.randomUUID(),
+    returnDate,
+    createdAt: new Date().toISOString().slice(0, 10),
+    notes,
+  });
+
+  return markerData;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     canHaveReturnDate,
     getFilteredMarkers,
     getReturnDateOptions,
     getCalendarEntries,
+    syncMarkerReturnDate,
   };
 }

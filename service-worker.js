@@ -1,9 +1,10 @@
-const CACHE_NAME = 'qls-map-leads-cache-v1';
+const CACHE_NAME = 'qls-map-leads-cache-v2';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
+  './calendar-utils.js',
   './manifest.json',
 ];
 
