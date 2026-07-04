@@ -437,7 +437,7 @@ function openMarkerInMaps(markerData) {
   const lng = Number(markerData.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-  const query = encodeURIComponent(markerData.title ? `${markerData.title} ${lat},${lng}` : `${lat},${lng}`);
+  const query = encodeURIComponent(`${lat},${lng}`);
   const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
